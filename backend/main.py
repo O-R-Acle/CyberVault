@@ -71,6 +71,7 @@ app.add_exception_handler(
 allowed_origins = [
     "http://localhost:5173",
     "https://cyber-vault-eaoye3a2c-oeishani.vercel.app"
+    "https://cyber-vault-c2nufnpzd-oeishani.vercel.app"
 ]
 
 frontend_url = os.getenv("FRONTEND_URL")
