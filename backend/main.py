@@ -65,13 +65,17 @@ app.add_exception_handler(
     _rate_limit_exceeded_handler
 )
 
+
 # CORS configuration
 
-allowed_origins = ["http://localhost:5173"]
+allowed_origins = [
+    "http://localhost:5173",
+    "https://cyber-vault-eaoye3a2c-oeishani.vercel.app"
+]
 
 frontend_url = os.getenv("FRONTEND_URL")
 
-if frontend_url:
+if frontend_url and frontend_url not in allowed_origins:
     allowed_origins.append(frontend_url)
 
 app.add_middleware(
