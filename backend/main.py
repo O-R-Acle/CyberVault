@@ -68,10 +68,13 @@ app.add_exception_handler(
 
 # CORS configuration
 
+
+# CORS configuration
+
 allowed_origins = [
     "http://localhost:5173",
-    "https://cyber-vault-eaoye3a2c-oeishani.vercel.app"
-    "https://cyber-vault-c2nufnpzd-oeishani.vercel.app"
+    "https://cyber-vault-eaoye3a2c-oeishani.vercel.app",
+    "https://cyber-vault-c2nufnpzd-oeishani.vercel.app",
     "https://cyber-vault-mxcj407m5-oeishani.vercel.app"
 ]
 
