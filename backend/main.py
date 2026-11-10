@@ -132,6 +132,26 @@ def scan_website(request: Request, url_request: URLRequest):
 
     return result
 
+@app.post("/scan-qr-url")
+@limiter.limit("10/minute")
+def scan_qr_url(request: Request, url_request: URLRequest):
+
+    result = scan_url(url_request.url)
+
+    if result.get("status") == "Invalid Input":
+        result["urlhaus"] = {"status": "not_checked"}
+        return result
+
+    urlhaus_result = check_urlhaus(
+        result.get("scanned_url", url_request.url),
+        URLHAUS_AUTH_KEY
+    )
+
+    result["urlhaus"] = urlhaus_result
+
+    return result
+
+
 
 # ---------------------------------
 # DOMAIN INTELLIGENCE

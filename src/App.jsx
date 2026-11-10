@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import API_BASE_URL from "./api";
 import "./App.css";
 
 import QRShield from "./QRShield";
 import MessageScanner from "./MessageScanner";
 import DomainIntelligence from "./DomainIntelligence";
+import Web3Verification from "./Web3Verification";
 
 function App() {
   const [url, setUrl] = useState("");
@@ -18,7 +19,7 @@ function App() {
   messages: []
 });
 
-const loadScanHistory = () => {
+const loadScanHistory = (shouldScroll = true) => {
   const readHistory = (key) => {
     try {
       return JSON.parse(localStorage.getItem(key) || "[]");
@@ -34,10 +35,15 @@ const loadScanHistory = () => {
     messages: readHistory("cybervault-message-history"),
   });
 
+  if (shouldScroll) {
   document.getElementById("scan-history")?.scrollIntoView({
     behavior: "smooth",
   });
+}
 };
+useEffect(() => {
+  loadScanHistory(false);
+}, []);
 
 const clearURLHistory = () => {
   const confirmClear = window.confirm(
@@ -52,6 +58,9 @@ const clearURLHistory = () => {
     ...previous,
     urls: [],
   }));
+
+  setResult(null);
+  setUrl("");
 };
   const testBackend = async () => {
     try {
@@ -117,6 +126,10 @@ localStorage.setItem(
   "cybervault-url-history",
   JSON.stringify(updatedScans)
 );
+setCentralHistory((previous) => ({
+  ...previous,
+  urls: updatedScans,
+}));
 
     } catch (error) {
       setResult({
@@ -127,6 +140,59 @@ localStorage.setItem(
       });
     }
   }
+
+  // CYBERVAULT SECURITY ANALYTICS
+
+const totalScans =
+  centralHistory.urls.length +
+  centralHistory.qrs.length +
+  centralHistory.domains.length +
+  centralHistory.messages.length;
+
+const highRiskCount =
+  centralHistory.urls.filter(
+    (scan) => Number(scan.riskScore) >= 60
+  ).length +
+  centralHistory.messages.filter(
+    (scan) => Number(scan.score) >= 60
+  ).length +
+  centralHistory.domains.filter(
+    (scan) => scan.risk === "Critical"
+  ).length;
+
+const suspiciousCount =
+  centralHistory.urls.filter(
+    (scan) => Number(scan.riskScore) >= 20 && Number(scan.riskScore) < 60
+  ).length +
+  centralHistory.messages.filter(
+    (scan) => Number(scan.score) >= 20 && Number(scan.score) < 60
+  ).length +
+  centralHistory.domains.filter(
+    (scan) => scan.risk === "Warning"
+  ).length;
+
+const lowRiskCount =
+  centralHistory.urls.filter(
+    (scan) => Number(scan.riskScore) < 20
+  ).length +
+  centralHistory.messages.filter(
+    (scan) => Number(scan.score) < 20
+  ).length +
+  centralHistory.domains.filter(
+    (scan) => scan.risk === "Low Risk"
+  ).length;
+
+const totalRiskAssessments =
+  highRiskCount + suspiciousCount + lowRiskCount;
+const securityScore =
+  totalRiskAssessments > 0
+    ? Math.round(
+        (
+          lowRiskCount * 100 +
+          suspiciousCount * 50
+        ) / totalRiskAssessments
+      )
+    : 0;
 
   return (
     <div className="app">
@@ -139,19 +205,32 @@ localStorage.setItem(
           Uncover threats. Protect trust.
         </p>
 
-        {/* SIDEBAR NAVIGATION */}
+      
+{/* SIDEBAR NAVIGATION */}
 
-        <nav>
+<nav>
+  <p
+    onClick={() =>
+      document.getElementById("security-analytics")?.scrollIntoView({
+        behavior: "smooth"
+      })
+    }
+    style={{ cursor: "pointer" }}
+  >
+    ◈ Security Overview
+  </p>
+
           <p
-  onClick={() =>
-    document.getElementById("scanner")?.scrollIntoView({
-      behavior: "smooth"
-    })
-  }
-  style={{ cursor: "pointer" }}
->
-  ◎ URL Security Scanner
-</p>
+            onClick={() =>
+              document.getElementById("scanner")?.scrollIntoView({
+                behavior: "smooth",
+              })
+            }
+            style={{ cursor: "pointer" }}
+          >
+            ◎ URL Security Scanner
+          </p>
+
           <p
             onClick={() =>
               document.getElementById("qr-shield")?.scrollIntoView({
@@ -166,7 +245,7 @@ localStorage.setItem(
           <p
             onClick={() =>
               document.getElementById("message-scanner")?.scrollIntoView({
-                behavior: "smooth"
+                behavior: "smooth",
               })
             }
             style={{ cursor: "pointer" }}
@@ -185,23 +264,30 @@ localStorage.setItem(
             ◎ Domain Intelligence
           </p>
 
-          <p>⬡ Web3 Verification</p>
+          <p
+            onClick={() =>
+              document.getElementById("web3-verification")?.scrollIntoView({
+                behavior: "smooth",
+              })
+            }
+            style={{ cursor: "pointer" }}
+          >
+            ⬡ Web3 Verification
+          </p>
 
           <p
   onClick={loadScanHistory}
   style={{ cursor: "pointer" }}
 >
   ◷ Scan History
-</p>
-
+  </p>
         </nav>
 
         <div className="sidebar-bottom">
           <p>CyberVault v1.0</p>
           <p>AI + Cybersecurity + Web3</p>
         </div>
-
-      </aside>
+       </aside>
 
       <main className="main">
 
@@ -294,6 +380,182 @@ localStorage.setItem(
 
         </section>
 
+        {/* LIVE SECURITY ANALYTICS */}
+
+<section className="analytics" id="security-analytics">
+
+  <p className="muted">SECURITY OVERVIEW</p>
+
+  <h2>Live Security Analytics</h2>
+
+  <p>
+    An overview of your recorded security investigations.
+  </p>
+
+  <div className="analytics-grid">
+
+    <div className="analytics-card">
+      <span>Total Scans</span>
+      <h2>{totalScans}</h2>
+      <p>Across all security tools</p>
+    </div>
+    <div className="analytics-card security-score-card">
+  <span>Security Assessment Score</span>
+
+  <div
+  className="security-score-circle"
+  style={{
+    "--score": `${securityScore}%`
+  }}
+>
+    <div className="security-score-inner">
+      <strong>{securityScore}</strong>
+      <span>/ 100</span>
+    </div>
+  </div>
+
+  <p>
+    {securityScore >= 80
+      ? "Good security posture"
+      : securityScore >= 50
+      ? "Moderate security posture"
+      : "Needs security attention"}
+  </p>
+</div>
+
+    <div className="analytics-card">
+      <span>High Risk</span>
+      <h2>{highRiskCount}</h2>
+      <p>Critical risk indicators</p>
+    </div>
+
+    <div className="analytics-card">
+      <span>Suspicious</span>
+      <h2>{suspiciousCount}</h2>
+      <p>Potential warning indicators</p>
+    </div>
+
+    <div className="analytics-card">
+      <span>Low Risk</span>
+      <h2>{lowRiskCount}</h2>
+      <p>Low-risk assessments</p>
+    </div>
+
+  </div>
+
+  <div className="analytics-card risk-distribution">
+
+  <h3>Risk Distribution</h3>
+
+  <p>
+    High Risk: {highRiskCount} (
+    {totalRiskAssessments
+      ? ((highRiskCount / totalRiskAssessments) * 100).toFixed(1)
+      : "0.0"}%)
+  </p>
+
+  <div className="risk-bar">
+  <div
+    className="risk-fill high"
+    style={{
+      width: `${totalRiskAssessments
+        ? (highRiskCount / totalRiskAssessments) * 100
+        : 0}%`
+    }}
+  />
+  <span className="risk-bar-label">
+    {totalRiskAssessments
+      ? ((highRiskCount / totalRiskAssessments) * 100).toFixed(1) + "%"
+      : "0.0%"}
+  </span>
+</div>
+  <p>
+    Suspicious: {suspiciousCount} (
+    {totalRiskAssessments
+      ? ((suspiciousCount / totalRiskAssessments) * 100).toFixed(1)
+      : "0.0"}%)
+  </p>
+
+  <div className="risk-bar">
+  <div
+    className="risk-fill suspicious"
+    style={{
+      width: `${totalRiskAssessments
+        ? (suspiciousCount / totalRiskAssessments) * 100
+        : 0}%`
+    }}
+  />
+  <span className="risk-bar-label">
+    {totalRiskAssessments
+      ? ((suspiciousCount / totalRiskAssessments) * 100).toFixed(1) + "%"
+      : "0.0%"}
+  </span>
+</div>
+
+  <p>
+    Low Risk: {lowRiskCount} (
+    {totalRiskAssessments
+      ? ((lowRiskCount / totalRiskAssessments) * 100).toFixed(1)
+      : "0.0"}%)
+  </p>
+
+  <div className="risk-bar">
+  <div
+    className="risk-fill low"
+    style={{
+      width: `${totalRiskAssessments
+        ? (lowRiskCount / totalRiskAssessments) * 100
+        : 0}%`
+    }}
+  />
+  <span className="risk-bar-label">
+    {totalRiskAssessments
+      ? ((lowRiskCount / totalRiskAssessments) * 100).toFixed(1) + "%"
+      : "0.0%"}
+  </span>
+</div>
+
+{totalRiskAssessments >= 0 && (
+  <>
+    <div className="risk-donut-layout">
+      <div
+        className="risk-donut"
+        style={{
+  background: totalRiskAssessments > 0
+    ? `conic-gradient(
+        #ef4444 0% ${(highRiskCount / totalRiskAssessments) * 100}%,
+        #f59e0b ${(highRiskCount / totalRiskAssessments) * 100}% ${((highRiskCount + suspiciousCount) / totalRiskAssessments) * 100}%,
+        #22c55e ${((highRiskCount + suspiciousCount) / totalRiskAssessments) * 100}% 100%
+      )`
+    : "#263449"
+}}
+      >
+        <div className="risk-donut-hole">
+          <strong>{totalRiskAssessments}</strong>
+          <span>Assessments</span>
+        </div>
+      </div>
+    </div>
+    <div className="risk-donut-legend">
+      <p><span className="legend-dot high-dot"></span> High Risk</p>
+      <p><span className="legend-dot suspicious-dot"></span> Suspicious</p>
+      <p><span className="legend-dot low-dot"></span> Low Risk</p>
+    </div>
+  </>
+)}
+
+  {totalRiskAssessments === 0 && (
+    <p>No risk assessments recorded yet.</p>
+  )}
+
+</div>
+  <p className="muted">
+    QR scans are included in total scans but excluded from risk distribution
+    because QR history does not store a risk score.
+  </p>
+
+</section>
+
         {/* URL SCANNER */}
 
         <section className="scanner" id="scanner">
@@ -319,7 +581,7 @@ localStorage.setItem(
           <button onClick={scanURL}>
             Analyse URL →
           </button>
-          <button onClick={clearURLHistory}>
+          <button type="button" onClick={clearURLHistory}>
   Clear URL History
 </button>
 
@@ -435,11 +697,43 @@ localStorage.setItem(
                 </div>
               )}
 
-              {/* SCANNER FINDINGS */}
+              {/* EXPLAINABLE SECURITY FINDINGS */}
 
-              {result.details?.map((item, index) => (
-                <p key={index}>• {item}</p>
-              ))}
+<div className="explainable-findings">
+
+  <h3>Why was this URL flagged?</h3>
+
+  {result.details?.length > 0 ? (
+    result.details.map((item, index) => (
+      <div className="finding-item" key={index}>
+        <span className="finding-icon">⚠</span>
+        <div>
+          <strong>
+  {item.toLowerCase().includes("https")
+    ? "Connection Security"
+    : item.toLowerCase().includes("hyphen")
+    ? "Domain Structure"
+    : item.toLowerCase().includes("keyword")
+    ? "Suspicious Keywords"
+    : `Security Indicator ${index + 1}`}
+</strong>
+          <p>{item}</p>
+        </div>
+      </div>
+    ))
+  ) : (
+    <div className="finding-item">
+      <span className="finding-icon">✓</span>
+      <div>
+        <strong>No suspicious indicators detected</strong>
+        <p>
+          The basic local checks did not identify any warning signs.
+        </p>
+      </div>
+    </div>
+  )}
+
+</div>
 
               <p className="result-note">
                 This is a basic local URL check, not a complete
@@ -453,15 +747,83 @@ localStorage.setItem(
 
         {/* QR SHIELD */}
 
-        <QRShield />
+        <QRShield
+  onScanComplete={() => loadScanHistory(false)}
+/>
 
         {/* MESSAGE SCANNER */}
 
-        <MessageScanner />
+        <MessageScanner
+  onScanComplete={() => loadScanHistory(false)}
+/>
 
         {/* DOMAIN INTELLIGENCE */}
 
-        <DomainIntelligence />
+        <DomainIntelligence
+  onScanComplete={() => loadScanHistory(false)}
+/>
+        <Web3Verification />
+
+
+{/* RECENT SECURITY ACTIVITY */}
+
+<section className="scanner" id="recent-activity">
+  <h2>Recent Security Activity</h2>
+
+  <p className="muted">
+    Your latest security investigations across CyberVault.
+  </p>
+
+  {[
+    ...centralHistory.urls.map((item) => ({
+      type: "URL Scan",
+      name: item.url,
+      risk: Number(item.riskScore) >= 60
+        ? "High Risk"
+        : Number(item.riskScore) >= 20
+        ? "Suspicious"
+        : "Low Risk",
+      time: item.scannedAt,
+    })),
+    ...centralHistory.qrs.map((item) => ({
+      type: "QR Scan",
+      name: item.content,
+      risk: "Not assessed",
+      time: item.scannedAt,
+    })),
+    ...centralHistory.messages.map((item) => ({
+      type: "Message Scan",
+      name: item.message,
+      risk: Number(item.score) >= 60
+        ? "High Risk"
+        : Number(item.score) >= 20
+        ? "Suspicious"
+        : "Low Risk",
+      time: item.timestamp,
+    })),
+    ...centralHistory.domains.map((item) => ({
+      type: "Domain Scan",
+      name: item.domain,
+      risk: item.risk,
+      time: item.scannedAt,
+    })),
+  ]
+    .sort((a, b) => new Date(b.time) - new Date(a.time))
+    .slice(0, 5)
+    .map((item, index) => (
+      <div className="history-item" key={index}>
+        <strong>{item.type}</strong>
+        <p>{item.name}</p>
+        <p>Risk: {item.risk}</p>
+        <small>{item.time}</small>
+      </div>
+    ))}
+
+  {totalScans === 0 && (
+    <p>No recent security activity yet.</p>
+  )}
+</section>
+
 
         {/* CENTRAL SCAN HISTORY */}
 

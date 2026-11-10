@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API_BASE_URL from "./api";
 
-function DomainIntelligence() {
+function DomainIntelligence({ onScanComplete }) {
   const [domain, setDomain] = useState("");
   const [result, setResult] = useState(null);
   const [scanHistory, setScanHistory]= useState(() => {
@@ -73,6 +73,9 @@ localStorage.setItem(
   "cybervault-domain-history",
   JSON.stringify(updatedHistory)
 );
+if (onScanComplete) {
+  onScanComplete();
+}
     } catch (error) {
       setResult({ error: error.message });
     } finally {
@@ -133,7 +136,8 @@ const certificateStatus =
     {result && !result.error && (
   <div className="domain-result">
     <h3>Domain Analysis Results</h3>
-    <div className="domain-card">
+
+<div className="domain-card">
   <h4>Overall Domain Risk Assessment</h4>
 
   <h2>
@@ -152,6 +156,34 @@ const certificateStatus =
     {domainRiskStatus === "Critical" &&
       "A critical DNS or SSL certificate issue was detected."}
   </p>
+
+  <div className="explainable-findings">
+    <h4>Why did this domain receive this assessment?</h4>
+
+    <div className="finding-item">
+      <span className="finding-icon">🌐</span>
+      <div>
+        <strong>DNS Resolution</strong>
+        <p>
+          {result?.dns?.status === "success"
+            ? "DNS lookup completed successfully. An IP address was found."
+            : "DNS lookup was unsuccessful. The domain could not be resolved."}
+        </p>
+      </div>
+    </div>
+
+    <div className="finding-item">
+      <span className="finding-icon">🔒</span>
+      <div>
+        <strong>SSL Certificate</strong>
+        <p>
+          {result?.ssl?.status === "valid"
+            ? "The SSL certificate is valid according to the domain scan."
+            : "The SSL certificate is invalid or unavailable. Check its status before trusting the connection."}
+        </p>
+      </div>
+    </div>
+  </div>
 
   <p>
     Assessment based only on DNS and SSL indicators. This is not a complete security verdict.

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function MessageScanner() {
+function MessageScanner({ onScanComplete }) {
   const [message, setMessage] = useState("");
   const [result, setResult] = useState(null);
 
@@ -154,6 +154,9 @@ localStorage.setItem(
   "cybervault-message-history",
   JSON.stringify(updatedHistory)
 );
+if (onScanComplete) {
+  onScanComplete();
+}
 };
 
   return (
@@ -201,14 +204,28 @@ localStorage.setItem(
 </div>
 {result.categories.length > 0 && (
   <div className="threat-categories">
-    <h4>Detected Threat Categories</h4>
+    <h4>Why was this message flagged?</h4>
 
     <div className="threat-category-list">
-      {result.categories.map((category, index) => (
-        <span className="threat-category-badge" key={index}>
-          ⚠ {category}
-        </span>
-      ))}
+      {result.categories.map((category, index) => {
+        const explanation =
+          category.toLowerCase().includes("otp")
+            ? "The message may be attempting to steal your OTP, PIN, or verification code."
+            : category.toLowerCase().includes("account")
+            ? "The message uses account-related warnings that may pressure users into revealing sensitive information."
+            : "This message contains patterns associated with potentially deceptive or harmful communication.";
+
+        return (
+          <div className="finding-item" key={index}>
+            <span className="finding-icon">⚠</span>
+
+            <div>
+              <strong>{category}</strong>
+              <p>{explanation}</p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   </div>
 )}
